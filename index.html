@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<title>收款助手</title>
+
+<link rel="manifest" href="manifest.json">
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+padding:20px;
+background:#f5f6fa;
+}
+
+h1{
+color:#333;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+margin-top:20px;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+th{
+background:#2f80ed;
+color:white;
+}
+
+button{
+background:#2f80ed;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>收款助手</h1>
+
+<input type="file" id="excel">
+
+<table id="table">
+
+<thead>
+
+<tr>
+<th>客户</th>
+<th>金额</th>
+<th>发货日期</th>
+<th>账期</th>
+<th>到期日</th>
+<th>操作</th>
+</tr>
+
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+<script>
+
+function parseTerm(text){
+
+if(!text) return 0
+
+if(text.includes("货到")) return 10
+
+let m=text.match(/(\d+)天/)
+
+if(m) return parseInt(m[1])
+
+return 0
+
+}
+
+function format(d){
+
+return d.toISOString().split("T")[0]
+
+}
+
+document.getElementById("excel").addEventListener("change",function(e){
+
+let file=e.target.files[0]
+
+let reader=new FileReader()
+
+reader.onload=function(e){
+
+let data=new Uint8Array(e.target.result)
+
+let workbook=XLSX.read(data,{type:"array"})
+
+let sheet=workbook.Sheets[workbook.SheetNames[0]]
+
+let rows=XLSX.utils.sheet_to_json(sheet)
+
+let tbody=document.querySelector("#table tbody")
+
+tbody.innerHTML=""
+
+rows.forEach(r=>{
+
+let customer=r["单位全名"]
+
+let date=r["日期"]
+
+let summary=r["摘要"]
+
+let amount=r["余额"]||r["金额"]
+
+if(!amount||amount==0)return
+
+let term=parseTerm(summary)
+
+if(term==0)return
+
+let ship=new Date(date)
+
+let due=new Date(ship)
+
+due.setDate(due.getDate()+term)
+
+let tr=document.createElement("tr")
+
+tr.innerHTML=`
+<td>${customer}</td>
+<td>${amount}</td>
+<td>${format(ship)}</td>
+<td>${term}天</td>
+<td>${format(due)}</td>
+<td><button onclick="wechat('${customer}',${amount})">微信催款</button></td>
+`
+
+tbody.appendChild(tr)
+
+})
+
+}
+
+reader.readAsArrayBuffer(file)
+
+})
+
+function wechat(c,a){
+
+let msg=`你好，
+
+关于以下货款请帮忙安排汇款：
+
+客户：${c}
+金额：${a}
+
+麻烦安排汇款，谢谢。`
+
+navigator.clipboard.writeText(msg)
+
+alert("催款信息已复制")
+
+}
+
+</script>
+
+</body>
+</html>
