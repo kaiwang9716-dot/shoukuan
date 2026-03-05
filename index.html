@@ -133,7 +133,13 @@ let term=parseTerm(summary)
 
 if(term==0)return
 
-let ship=new Date(date)
+let ship
+
+if(typeof date === "number"){
+ship = new Date((date - 25569) * 86400 * 1000)
+}else{
+ship = new Date(date)
+}
 
 let due=new Date(ship)
 
