@@ -125,6 +125,9 @@ let date=r["日期"]
 
 let summary=r["摘要"]
 
+// 只处理汇款或推销员收
+if(!summary || (!summary.includes("汇款") && !summary.includes("推销员收"))) return
+
 let amount=r["余额"]||r["金额"]
 
 if(!amount||amount==0)return
