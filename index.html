@@ -197,8 +197,8 @@ tr.innerHTML=`
 <td>${format(ship)}</td>
 <td>${term}天</td>
 <td>${format(due)}</td>
-<td><button onclick="wechat('${customer}',${amount})">微信催款</button></td>
-`
+<td>${status}</td>
+<td><button onclick="wechat('${customer}',${amount})">
 
 tbody.appendChild(tr)
 
