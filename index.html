@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <title>收款助手</title>
 
-<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
@@ -49,6 +49,8 @@ border-radius:6px;
 font-size:16px;
 }
 
+/* 状态颜色 */
+
 .overdue{
 background:#ffe5e5;
 color:#d60000;
@@ -80,12 +82,15 @@ color:#b8860b;
 <thead>
 
 <tr>
+
 <th>客户</th>
 <th>金额</th>
 <th>发货日期</th>
 <th>账期</th>
 <th>到期日</th>
+<th>状态</th>
 <th>操作</th>
+
 </tr>
 
 </thead>
@@ -132,15 +137,7 @@ let sheet=workbook.Sheets[workbook.SheetNames[0]]
 
 let rows=XLSX.utils.sheet_to_json(sheet)
 
-let tbody=document.querySelector("#table tbody")
-
-tbody.innerHTML=""
-
-rows.sort((a,b)=>{
-let d1=new Date(a["日期"])
-let d2=new Date(b["日期"])
-return d1-d2
-})
+let result=[]
 
 rows.forEach(r=>{
 
@@ -150,12 +147,13 @@ let date=r["日期"]
 
 let summary=r["摘要"]
 
-// 只处理汇款或推销员收
-if(!summary || (!summary.includes("汇款") && !summary.includes("推销员收"))) return
-
 let amount=r["余额"]||r["金额"]
 
 if(!amount||amount==0)return
+
+/* 只处理汇款或推销员收 */
+
+if(!summary || (!summary.includes("汇款") && !summary.includes("推销员收"))) return
 
 let term=parseTerm(summary)
 
@@ -173,38 +171,80 @@ let due=new Date(ship)
 
 due.setDate(due.getDate()+term)
 
+result.push({
+customer,
+amount,
+ship,
+term,
+due
+})
+
+})
+
+/* 按到期日排序 */
+
+result.sort((a,b)=>a.due-b.due)
+
+let tbody=document.querySelector("#table tbody")
+
+tbody.innerHTML=""
+
+result.forEach(r=>{
+
 let today=new Date()
+
 today.setHours(0,0,0,0)
 
-let diff=Math.floor((due-today)/(1000*60*60*24))
+let diff=Math.floor((r.due-today)/(1000*60*60*24))
 
 let status=""
 let className=""
 
 if(diff<0){
+
 status="逾期 "+Math.abs(diff)+" 天"
+
 className="overdue"
+
 }else if(diff==0){
+
 status="今日到期"
+
 className="today"
+
 }else if(diff<=3){
+
 status="即将到期"
+
 className="soon"
+
 }else{
+
 status="未到期"
+
 }
 
 let tr=document.createElement("tr")
+
 if(className) tr.className=className
 
 tr.innerHTML=`
-<td>${customer}</td>
-<td>${amount}</td>
-<td>${format(ship)}</td>
-<td>${term}天</td>
-<td>${format(due)}</td>
+
+<td>${r.customer}</td>
+
+<td>${r.amount}</td>
+
+<td>${format(r.ship)}</td>
+
+<td>${r.term}天</td>
+
+<td>${format(r.due)}</td>
+
 <td>${status}</td>
-<td><button onclick="wechat('${customer}',${amount})">
+
+<td><button onclick="wechat('${r.customer}',${r.amount})">微信催款</button></td>
+
+`
 
 tbody.appendChild(tr)
 
@@ -220,7 +260,7 @@ function wechat(c,a){
 
 let msg=`你好，
 
-关于以下到期货款请帮忙安排汇款：
+关于以下货款请帮忙安排汇款：
 
 客户：${c}
 金额：${a}
@@ -236,4 +276,5 @@ alert("催款信息已复制")
 </script>
 
 </body>
+
 </html>
