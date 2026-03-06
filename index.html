@@ -136,6 +136,12 @@ let tbody=document.querySelector("#table tbody")
 
 tbody.innerHTML=""
 
+rows.sort((a,b)=>{
+let d1=new Date(a["日期"])
+let d2=new Date(b["日期"])
+return d1-d2
+})
+
 rows.forEach(r=>{
 
 let customer=r["单位全名"]
